@@ -1,21 +1,3 @@
-variable "subscription_id" {
-    description = "The subscription ID to be used to connect to Azure(eg:304b6bac-cf05-4891-8ed6-XXXXXXXXX)"
-    type = string
-}
-variable "client_id" {
-    description = "The client ID to be used to connect to Azure(eg:863e4463-9461-4b28-XXXXXXXXXXXXXXXX)"
-    type = string
-}
-variable "client_secret" {
-    description = "The client secret to be used to connect to Azure(eg:TRC8Q~ZDlKica_2cWXXXXXXXXXXXXXXXXXXXXX)"
-    type = string
-}
-variable "tenant_id" {
-    description = "The tenant ID to be used to connect to Azure(eg:4dd09128-66c3-4a4b-aXXXXXXXXXXXXXXXXXXXXX)"
-    type = string
-}
-
-
 variable "resource_group" {
 description = "resource group for omni"
 }
@@ -119,11 +101,6 @@ variable "subnet4_address_prefixes_range" {
 
 variable "subnet5_address_prefixes_range" {
    description = "subnet address space for omni"
-}
-
-
-variable "frontdoor_name" {
-   description = "frontdoor name for omni"
 }
 
 variable "waf_name" {
