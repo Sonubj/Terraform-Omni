@@ -23,10 +23,10 @@ terraform {
 provider "azurerm" {
 
   skip_provider_registration = true
-  subscription_id = var.subscription_id
-  client_id       = var.client_id
-  client_secret   = var.client_secret
-  tenant_id       = var.tenant_id
+  subscription_id = "848a9243-4d4c-402b-8c7f-0b6d29ae6a6a"
+  client_id       = "2b7a82bb-a914-4b80-8e0a-42c7f752e4a9"
+  client_secret   = "g.j8Q~IdKKUOFr0P-MEgMUk~drOeIgF~KSUjgajM"
+  tenant_id       = "53f9d213-5534-4788-ac8a-56e81fb1cbc6"
   features{}
 
 }
@@ -598,82 +598,7 @@ output "app_id" {
   sensitive = true
 }
 
-#===============================================================================================================================
-#==========================================CREATION OF FRONTDOOR WAF POLICY=====================================================
-#===============================================================================================================================
 
-module "frontdoor" {
-  source  = "kumarvna/frontdoor/azurerm"
-  version = "1.0.0"
-
-
-
-
-
-
-   # By default, this module will not create a resource group. Location will be same as existing RG.
-  # proivde a name to use an existing resource group, specify the existing resource group name,
-  # set the argument to `create_resource_group = true` to create new resrouce group.
-#  create_resource_group = true
-  resource_group_name = "${data.azurerm_resource_group.test.name}"
-  location            = "${data.azurerm_resource_group.test.location}"
-
-
-
-  frontdoor_name      = var.frontdoor_name
-
-  routing_rules = [
-    {
-      name               = "exampleRoutingRule1"
-      accepted_protocols = ["Http", "Https"]
-      patterns_to_match  = ["/*"]
-      frontend_endpoints = [var.frontdoor_name]
-      forwarding_configuration = {
-        forwarding_protocol = "MatchRequest"
-        backend_pool_name   = "exampleBackendBing"
-      }
-    }
-  ]
-
-  backend_pool_load_balancing = [
-    {
-      name = "exampleLoadBalancingSettings1"
-    }
-  ]
-
-  backend_pool_health_probes = [
-    {
-      name = "exampleHealthProbeSetting1"
-    }
-  ]
-
-  backend_pools = [
-    {
-      name = "exampleBackendBing"
-      backend = {
-        host_header = "www.bing.com"
-        address     = "www.bing.com"
-        http_port   = 80
-        https_port  = 443
-      }
-      load_balancing_name = "exampleLoadBalancingSettings1"
-      health_probe_name   = "exampleHealthProbeSetting1"
-    }
-  ]
-
-  # In order to enable the use of your own custom HTTPS certificate you must grant
-  # Azure Front Door Service access to your key vault. For instuctions on how to
-  # configure your Key Vault correctly. Please refer to the product documentation.
-  # https://bit.ly/38FuAZv
-
-  frontend_endpoints = [
-    {
-      name      = var.frontdoor_name
-      host_name = "${var.frontdoor_name}.azurefd.net"
-
-
-    }
-  ]
 #==============================================================================================================================
 #==================AZURE FRONTDOOR WEB APPLICATION FIREWALL POLICY CONFIGURATION==============================================
 #=============================================================================================================================
