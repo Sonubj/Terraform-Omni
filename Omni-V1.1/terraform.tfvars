@@ -1,4 +1,4 @@
-resource_group                         = "rg-omni-uat"
+resource_group                         = "Automationinfra"
 Vnet_name                              = "vnet-omni-uat"
 vnet_address_space_range               = ["10.0.0.0/16"]
 subnet1_address_prefixes_range         = ["10.0.2.0/24"]
@@ -19,6 +19,5 @@ natgateway_name                        = "omni-NatGateway"
 keyvault_name                          = "Omni-KV"
 secret_name                            = "OmniUser"
 acr_name                               = "omni1uatacr"
-frontdoor_name                         = "OMNIFDUAT"
 waf_name                               = "OMNIWAFUAT"
 
