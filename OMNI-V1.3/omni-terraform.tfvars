@@ -8,7 +8,6 @@ subnet4_address_prefixes_range         = ["10.0.5.0/24"]
 subnet5_address_prefixes_range         = ["10.0.1.0/24"]
 
 public_ip                              = "ip-omni-uat"
-mssql_server_name                      = "mssqlserver-omni"
 rediscache_name                        = "rc-omni-uat-test"
 cosmosdb_account_name                  = "pe-cosmos-db-uat"
 mssql_server_db_name                   = "mssql-omni-uat-db"
@@ -16,7 +15,6 @@ storageaccount_name                    = "omnistrgaccounttest"
 app_service_plan_name                  = "omni-functions-test-service-plan"
 function_app_name                      = "omni-azure-functions"
 natgateway_name                        = "omni-NatGateway"
-keyvault_name                          = "Omni-KV"
 secret_name                            = "OmniUser"
 acr_name                               = "omni1uatacr"
 frontdoor_name                         = "OMNIFDUAT"
