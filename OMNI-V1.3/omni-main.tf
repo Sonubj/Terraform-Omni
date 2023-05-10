@@ -54,6 +54,11 @@ resource "azurerm_virtual_network" "vnet" {
   location            = "${data.azurerm_resource_group.test.location}"
   resource_group_name = "${data.azurerm_resource_group.test.name}"
 }
+resource "time_sleep" "wait_3_seconds" {
+  depends_on = [azurerm_virtual_network.vnet]
+  create_duration = "3s"
+}
+
 
 #===============================================================================================================================
 #===============================================CREATION OF SUBNETS(5)==========================================================
@@ -136,6 +141,7 @@ resource "azurerm_public_ip" "omnipip" {
 
 
 
+
 #==============================================================================================================================
 #============================================CREATION OF REDIS CACHE===========================================================
 #===============================================================================================================================
@@ -183,6 +189,104 @@ resource "azurerm_cosmosdb_account" "example" {
 }
 
 
+
+
+#===============================================================================================================================
+#=================================================CREATION OF PRIVATE ENDPOINTS(3)==============================================
+#===============================================================================================================================
+
+
+
+
+
+# Creation of private endpoint attached to cosmos db account
+
+resource "azurerm_private_endpoint" "private2" {
+  name                = "pe-cosmos-db-uat"
+  location            = "${data.azurerm_resource_group.test.location}"
+  resource_group_name = "${data.azurerm_resource_group.test.name}"
+  subnet_id           = azurerm_subnet.subnet2.id
+
+  private_service_connection {
+    name                           = "psc2"
+    private_connection_resource_id = azurerm_cosmosdb_account.example.id
+    subresource_names              = [ "Sql"]
+    is_manual_connection           = false
+  }
+
+}
+
+#Creation of private endpoint attached to redis cache
+
+
+resource "azurerm_private_endpoint" "private3" {
+  name                = "pe-redis-db-uat"
+  location            = "${data.azurerm_resource_group.test.location}"
+  resource_group_name = "${data.azurerm_resource_group.test.name}"
+  subnet_id           = azurerm_subnet.subnet4.id
+
+  private_service_connection {
+    name                           = "psc3"
+    private_connection_resource_id = azurerm_redis_cache.example.id
+    subresource_names              = [ "redisCache" ]
+    is_manual_connection           = false
+ }
+
+}
+
+
+#=============================================================================================================================
+#===========================================CREATION OF PRIVATE DNS ZONE(3)=====================================================
+#=============================================================================================================================
+
+# Resource-1: Create Azure Private DNS Zone
+
+resource "azurerm_private_dns_zone" "private_dns_zone1" {
+  name                = "privatelink.documents.azure.com"
+  resource_group_name = "${data.azurerm_resource_group.test.name}"
+}
+
+# Resource-1: Associate Private DNS Zone to Virtual Network
+
+resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_zone_vnet_associate" {
+  name                  = "vnet1"
+  resource_group_name   = "${data.azurerm_resource_group.test.name}"
+  private_dns_zone_name = azurerm_private_dns_zone.private_dns_zone1.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
+
+# Resource-2: Create Azure Private DNS Zone
+
+resource "azurerm_private_dns_zone" "private_dns_zone2" {
+  name                = "privatelink.redis.cache.windows.net"
+  resource_group_name = "${data.azurerm_resource_group.test.name}"
+}
+
+# Resource-2: Associate Private DNS Zone to Virtual Network
+
+resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_zone_vnet_associate1" {
+  name                  = "vnet2"
+  resource_group_name   = "${data.azurerm_resource_group.test.name}"
+  private_dns_zone_name = azurerm_private_dns_zone.private_dns_zone2.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
+
+# Resource-3: Create Azure Private DNS Zone
+
+resource "azurerm_private_dns_zone" "private_dns_zone3" {
+  name                = "privatelink.database.windows.net"
+  resource_group_name = "${data.azurerm_resource_group.test.name}"
+}
+
+# Resource-3: Associate Private DNS Zone to Virtual Network
+
+resource "azurerm_private_dns_zone_virtual_network_link" "private_dns_zone_vnet_associate2" {
+  name                  = "vnet3"
+  resource_group_name   = "${data.azurerm_resource_group.test.name}"
+  private_dns_zone_name = azurerm_private_dns_zone.private_dns_zone3.name
+  virtual_network_id    = azurerm_virtual_network.vnet.id
+}
+
 #===============================================================================================================================
 #============================================CREATION OF ACR REGISTRY===========================================================
 #===============================================================================================================================
@@ -227,106 +331,12 @@ resource "azurerm_storage_account" "example" {
 }
 
 
-#Creating blob containers
-
-#resource "azurerm_storage_container" "{Blob}" {
-#  name                  = "{Blob}"
-#  storage_account_name  = azurerm_storage_account.example.name
-#  container_access_type = "private"
-#}
-
-#===============================================================================================================================
-#==================================================CREATION OF APP SERVICE PLAN================================================
-#===============================================================================================================================
-
-#Creating of app service plan
-resource "azurerm_app_service_plan" "example" {
-  name                = "testservice"
-  location            = "${data.azurerm_resource_group.test.location}"
-  resource_group_name = "${data.azurerm_resource_group.test.name}"
-  kind                = "Linux"
-  reserved            = true
-
-  sku {
-    tier = "Dynamic"
-    size = "P1v3"
-  }
-}
-
-#===============================================================================================================================
-#==================================================CREATION OF APP SERVICES================================================
-#===============================================================================================================================
-
-
-# Create the web app, pass in the App Service Plan ID
-resource "azurerm_linux_web_app" "webapp" {
-  name                  = "${var.app_service_object[count.index]}-azure-web"
-  count                 = 12
-  location              = "${data.azurerm_resource_group.test.location}"
-  resource_group_name   = "${data.azurerm_resource_group.test.name}"
-  service_plan_id       = azurerm_app_service_plan.example.id
-  https_only            = true
-
-
-site_config {
-    always_on      = "true"
-
-    application_stack {
-      docker_image     = "${azurerm_container_registry.acr.login_server}/myimage"
-      docker_image_tag = "latest"
-      dotnet_version   = "6.0"
-    }
-  }
-
-  app_settings = {
-    WEBSITES_ENABLE_APP_SERVICE_STORAGE = false
-
-    # Settings for private Container Registires
-    DOCKER_REGISTRY_SERVER_URL      = "https://${azurerm_container_registry.acr.login_server}"
-    DOCKER_REGISTRY_SERVER_USERNAME = azurerm_container_registry.acr.admin_username
-    DOCKER_REGISTRY_SERVER_PASSWORD = azurerm_container_registry.acr.admin_password
-
-  }
-
-}
-
-
-
-#===============================================================================================================================
-#=====================================CREATION OF FUNCTION APP=================================================================
-#==============================================================================================================================
-
-#Creating of function app
-
-resource "azurerm_function_app" "example" {
-  name                       = "function1omni"
-  location                   = "${data.azurerm_resource_group.test.location}"
-  resource_group_name        = "${data.azurerm_resource_group.test.name}"
-  app_service_plan_id        = azurerm_app_service_plan.example.id
-  storage_account_name       = azurerm_storage_account.example.name
-  storage_account_access_key = azurerm_storage_account.example.primary_access_key
-  os_type                    = "linux"
-  version                    = "~3"
-
-site_config {
-      always_on                 = true
-      linux_fx_version          = "DOCKER|${azurerm_container_registry.acr.login_server}/pingtrigger:test"
-    }
 
 
 
 
-  app_settings = {
-    WEBSITES_ENABLE_APP_SERVICE_STORAGE = false
 
-    # Settings for private Container Registires
-    DOCKER_REGISTRY_SERVER_URL      = "https://${azurerm_container_registry.acr.login_server}"
-    DOCKER_REGISTRY_SERVER_USERNAME = azurerm_container_registry.acr.admin_username
-    DOCKER_REGISTRY_SERVER_PASSWORD = azurerm_container_registry.acr.admin_password
 
-  }
-
-}
 
 #===============================================================================================================================
 #=========================================CREATION NAT GATEWAY==================================================================
@@ -355,36 +365,10 @@ resource "azurerm_subnet_nat_gateway_association" "example" {
   nat_gateway_id = azurerm_nat_gateway.example.id
 }
 
-#===============================================================================================================================
-#=============================================CREATION OF APPLICATION INSIGHT===================================================
-#===============================================================================================================================
 
 
-#Creating application insight
 
 
-resource "azurerm_log_analytics_workspace" "example" {
-  name                = "workspace-test"
-  location            = "${data.azurerm_resource_group.test.location}"
-  resource_group_name = "${data.azurerm_resource_group.test.name}"
-  sku                 = "PerGB2018"
-  retention_in_days   = 30
-}
-
-resource "azurerm_application_insights" "example" {
-  name                = "tf-test-appinsights"
-  location            = "${data.azurerm_resource_group.test.location}"
-  resource_group_name = "${data.azurerm_resource_group.test.name}"
-  workspace_id        = azurerm_log_analytics_workspace.example.id
-  application_type    = "web"
-}
-
-output "instrumentation_key" {
-  value = azurerm_application_insights.example.instrumentation_key
-  sensitive = true
-}
-
-output "app_id" {
-  value = azurerm_application_insights.example.app_id
-  sensitive = true
-}
+#===========================================================================================================================
+#===================================================END====================================================================
+#=======================================================================================================================
